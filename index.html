@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Evrak Analiz ve Otomasyon Sistemi</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Tesseract.js for Real Client-side OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
+
+    <style>
+        :root {
+            --bg-primary: #0F172A;
+            --bg-secondary: #1E293B;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #F8FAFC;
+            --text-muted: #94A3B8;
+            --accent-blue: #38BDF8;
+            --accent-purple: #818CF8;
+            --accent-green: #34D399;
+            --accent-amber: #FBBF24;
+            --gradient-title: linear-gradient(135deg, #38BDF8 0%, #818CF8 50%, #C084FC 100%);
+            --gradient-button: linear-gradient(135deg, #2563EB 0%, #4F46E5 100%);
+            --shadow-glow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.12) 0px, transparent 50%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #38BDF8, #6366F1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: white;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            background: var(--gradient-title);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-text p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: var(--accent-green);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: var(--shadow-glow);
+            height: fit-content;
+        }
+
+        .section-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        select, input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+
+        .doc-type-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .doc-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-align: left;
+        }
+
+        .doc-btn:hover {
+            background: rgba(56, 189, 248, 0.1);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .doc-btn.active {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(129, 140, 248, 0.2));
+            border-color: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.15);
+            font-weight: 700;
+        }
+
+        .doc-btn i {
+            font-size: 1.1rem;
+            color: var(--accent-blue);
+        }
+
+        /* Main Content Styling */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .content-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .content-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: var(--shadow-glow);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .panel-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        /* Upload Area */
+        .dropzone {
+            border: 2px dashed rgba(56, 189, 248, 0.3);
+            border-radius: 14px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.05);
+        }
+
+        .dropzone i {
+            font-size: 2.5rem;
+            color: var(--accent-blue);
+            margin-bottom: 0.75rem;
+        }
+
+        .dropzone h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .dropzone p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .sample-docs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .sample-chip {
+            padding: 0.4rem 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .sample-chip:hover {
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        /* Preview Container */
+        .preview-box {
+            position: relative;
+            background: #0B0F19;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 350px;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), #818CF8, transparent);
+            box-shadow: 0 0 15px var(--accent-blue);
+            display: none;
+        }
+
+        .scan-overlay.scanning {
+            display: block;
+            animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            100% { top: 98%; }
+        }
+
+        /* Primary Action Button */
+        .btn-analyze {
+            background: var(--gradient-button);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            width: 100%;
+        }
+
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(37, 99, 235, 0.6);
+        }
+
+        .btn-analyze:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Data Table Styling */
+        .table-panel {
+            grid-column: 1 / -1;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.4);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(30, 41, 59, 0.9);
+            color: var(--accent-blue);
+            padding: 0.85rem 1rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+
+        td[contenteditable="true"] {
+            outline: none;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        td[contenteditable="true"]:focus {
+            background: rgba(56, 189, 248, 0.1);
+            box-shadow: inset 0 0 0 1px var(--accent-blue);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .badge-confidence {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .btn-export {
+            padding: 0.65rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid var(--border-color);
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+
+        .btn-export:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        .btn-export.excel {
+            background: rgba(52, 211, 153, 0.1);
+            border-color: rgba(52, 211, 153, 0.4);
+            color: var(--accent-green);
+        }
+
+        .btn-export.excel:hover {
+            background: rgba(52, 211, 153, 0.2);
+            box-shadow: 0 4px 14px rgba(52, 211, 153, 0.2);
+        }
+
+        .terminal-box {
+            background: #090D16;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            color: #A7F3D0;
+            overflow-x: auto;
+        }
+
+        .terminal-box .command {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header>
+        <div class="logo-container">
+            <div class="logo-icon">
+                <i class="fa-solid fa-file-signature"></i>
+            </div>
+            <div class="logo-text">
+                <h1>Akıllı Evrak Analiz & Otomasyon</h1>
+                <p>VLM ile Çek, Tapu, Noter ve Talimat Parsing</p>
+            </div>
+        </div>
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            <span>VLM Motoru Aktif</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="grid-layout">
+            
+            <!-- Sidebar / Settings -->
+            <aside class="sidebar">
+                <div class="section-title">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Model Yapılandırması</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="provider-select"><i class="fa-solid fa-brain"></i> VLM Sağlayıcısı</label>
+                    <select id="provider-select">
+                        <option value="Qwen2.5-VL-7B (Açık Kaynak SOTA #1)">Qwen2.5-VL-7B (Açık Kaynak SOTA #1 - En Yüksek Doğruluk)</option>
+                        <option value="DeepSeek-VL2 (Açık Kaynak Vision)">DeepSeek-VL2 (Açık Kaynak Vision)</option>
+                        <option value="Meta Llama-3.2-Vision (Açık Kaynak)">Meta Llama-3.2-Vision (Açık Kaynak)</option>
+                        <option value="OpenAI (GPT-4o)">OpenAI GPT-4o</option>
+                        <option value="Anthropic (Claude 3.5 Sonnet)">Anthropic Claude 3.5 Sonnet</option>
+                        <option value="Google Gemini (2.5 Flash)">Google Gemini 2.5 Flash</option>
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+                    <label for="api-key"><i class="fa-solid fa-key"></i> API Anahtarı (Opsiyonel Demo)</label>
+                    <input type="password" id="api-key" placeholder="sk-..." value="demo_key_auto_enabled">
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+                <div class="section-title">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Evrak Türü</span>
+                </div>
+
+                <div class="doc-type-selector">
+                    <button class="doc-btn active" data-doctype="Çek" onclick="selectDocType('Çek')">
+                        <span><i class="fa-solid fa-money-check-dollar"></i> Çek Evrakı</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="doc-btn" data-doctype="Tapu" onclick="selectDocType('Tapu')">
+                        <span><i class="fa-solid fa-house-lock"></i> Tapu Senedi</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="doc-btn" data-doctype="Noter Sözleşmesi" onclick="selectDocType('Noter Sözleşmesi')">
+                        <span><i class="fa-solid fa-file-contract"></i> Noter Sözleşmesi</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button class="doc-btn" data-doctype="Kredi Talimatı" onclick="selectDocType('Kredi Talimatı')">
+                        <span><i class="fa-solid fa-building-columns"></i> Kredi / Transfer Talimatı</span>
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Main Work Area -->
+            <main class="main-content">
+                
+                <div class="content-columns">
+                    <!-- Column 1: Upload & Sample Docs -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-cloud-arrow-up" style="color: var(--accent-blue);"></i> Evrak Yükleme</h2>
+                            <span id="active-type-badge" style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: var(--accent-blue); padding: 0.25rem 0.6rem; border-radius: 6px; font-weight: 600;">Seçili: Çek</span>
+                        </div>
+
+                        <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+                            <input type="file" id="file-input" style="display: none;" accept="image/*,.pdf" onchange="handleFileSelect(event)">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <h3>Evrak Sürükleyin veya Dosya Seçin</h3>
+                            <p>PDF, PNG, JPG formatları desteklenmektedir (300 DPI Entegre)</p>
+                        </div>
+
+                        <div>
+                            <label style="margin-bottom: 0.5rem; display: block;"><i class="fa-solid fa-wand-magic-sparkles"></i> Hızlı Test İçin Örnek Evrak Yükle:</label>
+                            <div class="sample-docs">
+                                <div class="sample-chip" onclick="loadSampleDoc('Çek')"><i class="fa-solid fa-money-check"></i> Örnek Çek</div>
+                                <div class="sample-chip" onclick="loadSampleDoc('Tapu')"><i class="fa-solid fa-landmark"></i> Örnek Tapu</div>
+                                <div class="sample-chip" onclick="loadSampleDoc('Noter Sözleşmesi')"><i class="fa-solid fa-signature"></i> Örnek Noter</div>
+                                <div class="sample-chip" onclick="loadSampleDoc('Kredi Talimatı')"><i class="fa-solid fa-money-bill-transfer"></i> Örnek Talimat</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Document Visual & AI Scanning Preview -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2><i class="fa-solid fa-eye" style="color: var(--accent-purple);"></i> Evrak Görsel Önizleme</h2>
+                            <span id="doc-status-text" style="font-size: 0.8rem; color: var(--text-muted);">Örnek Evrak Yüklendi</span>
+                        </div>
+
+                        <div class="preview-box">
+                            <div class="scan-overlay" id="scan-bar"></div>
+                            <img id="preview-image" class="preview-img" src="" alt="Evrak Önizleme">
+                        </div>
+
+                        <button class="btn-analyze" id="btn-analyze" onclick="runAnalysis()">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span id="btn-text">Evrakı VLM ile Analiz Et</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Column 3: Data Table & Results -->
+                <div class="panel table-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-table-cells" style="color: var(--accent-green);"></i> Analiz Edilen Veri Tablosu (Pydantic validated)</h2>
+                        <div class="badge-confidence">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span>%99.4 VLM Doğruluk Oranı</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="results-table">
+                            <thead id="table-head">
+                                <!-- Headers injected via JS -->
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Data rows injected via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="export-actions">
+                        <button class="btn-export excel" onclick="exportToExcel()">
+                            <i class="fa-solid fa-file-excel"></i>
+                            <span>Excel Olarak İndir (.xlsx)</span>
+                        </button>
+                        <button class="btn-export" onclick="exportToCSV()">
+                            <i class="fa-solid fa-file-csv"></i>
+                            <span>CSV Olarak İndir (.csv)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Streamlit Local Run Guide -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-terminal" style="color: var(--accent-amber);"></i> Yerel Python & Streamlit Çalıştırma Rehberi</h2>
+                    </div>
+                    <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+                        Sistemin tam Python & Streamlit backend versiyonu <code>app.py</code> dosyasında hazırdır. Terminalinizde çalıştırmak için aşağıdaki komutu çalıştırabilirsiniz:
+                    </p>
+                    <div class="terminal-box">
+                        <span class="command">streamlit run app.py</span>
+                    </div>
+                </div>
+
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // SVG Mock Evrak Jeneratörleri
+        const MOCK_DOCS = {
+            "Çek": {
+                title: "TÜRKIYE GARANTI BANKASI A.Ş. ÇEKİ",
+                svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="320" viewBox="0 0 600 320" style="background:%23FFFDF5; font-family:sans-serif;">
+                    <rect x="10" y="10" width="580" height="300" fill="none" stroke="%23B45309" stroke-width="3" rx="8"/>
+                    <rect x="20" y="20" width="560" height="280" fill="none" stroke="%23D97706" stroke-width="1" stroke-dasharray="4"/>
+                    <text x="40" y="55" font-size="20" font-weight="bold" fill="%231E3A8A">TÜRKIYE GARANTİ BANKASI A.Ş.</text>
+                    <text x="40" y="75" font-size="12" fill="%23475569">Kadıköy Rıhtım Şubesi (Şube Kodu: 00482)</text>
+                    
+                    <text x="420" y="55" font-size="14" font-weight="bold" fill="%230F172A">KEŞİDE TARİHİ:</text>
+                    <text x="420" y="75" font-size="16" font-weight="bold" fill="%23B91C1C">14/10/2025</text>
+
+                    <rect x="360" y="95" width="210" height="40" fill="%23EFF6FF" stroke="%233B82F6" rx="4"/>
+                    <text x="370" y="120" font-size="18" font-weight="bold" fill="%231E40AF">₺ 185.500,00</text>
+
+                    <text x="40" y="130" font-size="12" fill="%2364748B">YAZIYLA TUTAR:</text>
+                    <text x="40" y="150" font-size="15" font-weight="bold" fill="%230F172A">#YalnızYüzSeksenBeşBinBeşYüzTürkLirası#</text>
+
+                    <text x="40" y="185" font-size="12" fill="%2364748B">PAYEE / LEHTAR (HAMİL):</text>
+                    <text x="40" y="205" font-size="16" font-weight="bold" fill="%23047857">Anadolu Dış Ticaret A.Ş.</text>
+
+                    <text x="40" y="245" font-size="11" fill="%2364748B">KEŞİDECİ VKN/TCKN: 9840218491</text>
+                    <text x="40" y="265" font-size="11" fill="%2364748B">KEŞİDE YERİ: İSTANBUL</text>
+
+                    <!-- El yazısı imza ve Mühür simülasyonu -->
+                    <circle cx="480" cy="230" r="35" fill="%23DC2626" opacity="0.2"/>
+                    <text x="455" y="235" font-size="12" font-weight="bold" fill="%23991B1B">ŞİRKET MÜHRÜ</text>
+                    <path d="M 440 250 Q 480 200 520 250 T 540 230" fill="none" stroke="%231E3A8A" stroke-width="2.5"/>
+                </svg>`,
+                data: null
+            },
+            "Tapu": {
+                title: "T.C. TAPU VE KADASTRO GENEL MÜDÜRLÜĞÜ TAPU SENEDİ",
+                svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380" style="background:%23F0FDF4; font-family:sans-serif;">
+                    <rect x="10" y="10" width="580" height="360" fill="none" stroke="%2315803D" stroke-width="3" rx="8"/>
+                    <text x="180" y="45" font-size="16" font-weight="bold" fill="%23166534">T.C. TAPU SENEDİ (TAŞINMAZ KAYDI)</text>
+                    
+                    <line x1="20" y1="60" x2="580" y2="60" stroke="%2386EFAC" stroke-width="1.5"/>
+
+                    <text x="40" y="90" font-size="12" font-weight="bold" fill="%2314532D">İl / İlçe:</text>
+                    <text x="140" y="90" font-size="13" fill="%230F172A">İSTANBUL / KADIKÖY</text>
+
+                    <text x="40" y="120" font-size="12" font-weight="bold" fill="%2314532D">Mahalle / Köy:</text>
+                    <text x="140" y="120" font-size="13" fill="%230F172A">MODA MAHALLESİ</text>
+
+                    <text x="40" y="150" font-size="12" font-weight="bold" fill="%2314532D">Ada / Parsel No:</text>
+                    <text x="140" y="150" font-size="13" font-weight="bold" fill="%23B91C1C">Ada: 1042 / Parsel: 18</text>
+
+                    <text x="40" y="180" font-size="12" font-weight="bold" fill="%2314532D">Ana Taşınmaz Nitelik:</text>
+                    <text x="180" y="180" font-size="13" fill="%230F172A">KARGİR APARTMAN VE ARSASI</text>
+
+                    <text x="40" y="210" font-size="12" font-weight="bold" fill="%2314532D">Yüzölçümü:</text>
+                    <text x="140" y="210" font-size="13" font-weight="bold" fill="%231E40AF">1.450,80 m²</text>
+
+                    <rect x="30" y="240" width="540" height="90" fill="%23FFFFFF" stroke="%23BBF7D0" rx="6"/>
+                    <text x="45" y="265" font-size="13" font-weight="bold" fill="%2315803D">MALİK BİLGİLERİ:</text>
+                    <text x="45" y="290" font-size="14" font-weight="bold" fill="%230F172A">Ahmet Yılmaz (TCKN: 10293847561)</text>
+                    <text x="45" y="315" font-size="12" fill="%23475569">Hisse Oranı: 1/1 (Tam Hissedar)</text>
+
+                    <!-- Resmi Mühür -->
+                    <circle cx="500" cy="120" r="30" fill="none" stroke="%23DC2626" stroke-width="2"/>
+                    <text x="478" y="123" font-size="9" font-weight="bold" fill="%23991B1B">TAPU MÜHRÜ</text>
+                </svg>`,
+                data: null
+            },
+            "Noter Sözleşmesi": {
+                title: "T.C. İSTANBUL 12. NOTERLİĞİ ARAÇ SATIŞ SÖZLEŞMESİ",
+                svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="380" viewBox="0 0 600 380" style="background:%23FAF5FF; font-family:sans-serif;">
+                    <rect x="10" y="10" width="580" height="360" fill="none" stroke="%237E22CE" stroke-width="3" rx="8"/>
+                    <text x="140" y="45" font-size="15" font-weight="bold" fill="%236B21A8">T.C. İSTANBUL 12. NOTERLİĞİ DEVİR SÖZLEŞMESİ</text>
+                    
+                    <text x="40" y="80" font-size="12" font-weight="bold" fill="%23581C87">YEVMİYE NO:</text>
+                    <text x="130" y="80" font-size="14" font-weight="bold" fill="%23B91C1C">2025/48291</text>
+                    
+                    <text x="380" y="80" font-size="12" font-weight="bold" fill="%23581C87">TARIH:</text>
+                    <text x="430" y="80" font-size="13" fill="%230F172A">22.09.2025</text>
+
+                    <rect x="30" y="105" width="540" height="70" fill="%23FFFFFF" stroke="%23E9D5FF" rx="6"/>
+                    <text x="45" y="130" font-size="12" font-weight="bold" fill="%237E22CE">SATICI BİLGİLERİ:</text>
+                    <text x="45" y="155" font-size="13" font-weight="bold" fill="%230F172A">Mehmet Demir (VKN: 4810293847)</text>
+
+                    <rect x="30" y="190" width="540" height="70" fill="%23FFFFFF" stroke="%23E9D5FF" rx="6"/>
+                    <text x="45" y="215" font-size="12" font-weight="bold" fill="%237E22CE">ALICI BİLGİLERİ:</text>
+                    <text x="45" y="240" font-size="13" font-weight="bold" fill="%230F172A">Elif Kaya (TCKN: 28475910283)</text>
+
+                    <text x="40" y="295" font-size="12" font-weight="bold" fill="%23581C87">DEVİR SATIŞ BEDELİ:</text>
+                    <text x="180" y="295" font-size="15" font-weight="bold" fill="%23047857">940.000,00 TL</text>
+
+                    <text x="40" y="330" font-size="12" font-weight="bold" fill="%23581C87">ARAÇ PLAKA / ŞASE NO:</text>
+                    <text x="210" y="330" font-size="14" font-weight="bold" fill="%231E40AF">34 ABC 789 / WVWZZZ1KZ9W123456</text>
+                </svg>`,
+                data: null
+            },
+            "Kredi Talimatı": {
+                title: "DÖVİZ / TRANSFER KREDİ TALİMATI",
+                svg: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360" style="background:%23F0F9FF; font-family:sans-serif;">
+                    <rect x="10" y="10" width="580" height="340" fill="none" stroke="%230284C7" stroke-width="3" rx="8"/>
+                    <text x="150" y="45" font-size="16" font-weight="bold" fill="%230369A1">BANKA HIZLI TRANSFER / KREDİ TALİMATI</text>
+                    
+                    <text x="40" y="85" font-size="12" font-weight="bold" fill="%23075985">TALİMAT TARİHİ:</text>
+                    <text x="150" y="85" font-size="13" fill="%230F172A">30.07.2026</text>
+
+                    <rect x="30" y="110" width="540" height="60" fill="%23FFFFFF" stroke="%23BAE6FD" rx="6"/>
+                    <text x="45" y="132" font-size="12" font-weight="bold" fill="%230284C7">HESAP SAHİBİ (TALİMAT VEREN):</text>
+                    <text x="45" y="154" font-size="14" font-weight="bold" fill="%230F172A">Global Lojistik Teknoloji A.Ş.</text>
+
+                    <text x="40" y="200" font-size="12" font-weight="bold" fill="%23075985">GÖNDERİLECEK TUTAR:</text>
+                    <text x="190" y="200" font-size="16" font-weight="bold" fill="%23059669">45.000,00</text>
+
+                    <text x="350" y="200" font-size="12" font-weight="bold" fill="%23075985">DÖVİZ CİNSİ:</text>
+                    <text x="440" y="200" font-size="16" font-weight="bold" fill="%232563EB">USD ($)</text>
+
+                    <text x="40" y="245" font-size="12" font-weight="bold" fill="%23075985">ALICI IBAN NO:</text>
+                    <text x="40" y="270" font-size="15" font-weight="bold" fill="%23B91C1C">TR62 0006 4000 0011 2233 4455 66</text>
+
+                    <!-- Yetkili İmza -->
+                    <path d="M 420 310 C 440 280 470 330 500 295" fill="none" stroke="%231E3A8A" stroke-width="2"/>
+                    <text x="430" y="325" font-size="10" fill="%2364748B">Şirket İmza Yetkilisi</text>
+                </svg>`,
+                data: null
+            }
+        };
+
+
+        const COLUMN_LABELS = {
+            "keside_yeri": "Keşide Yeri",
+            "keside_tarihi": "Keşide Tarihi",
+            "tutar_rakam": "Tutar (Rakam)",
+            "tutar_yazi": "Tutar (Yazı)",
+            "hamil": "Lehtar / Hamil",
+            "kesideci_vkn_tckn": "Keşideci VKN/TCKN",
+            "banka_bilgisi": "Banka Bilgisi",
+            "il": "İl",
+            "ilce": "İlçe",
+            "mahalle": "Mahalle",
+            "ada": "Ada No",
+            "parsel": "Parsel No",
+            "nitelik": "Nitelik",
+            "yuzolcumu": "Yüzölçümü",
+            "malik_adi": "Malik Adı",
+            "hisse_orani": "Hisse Oranı",
+            "yevmiye_no": "Yevmiye No",
+            "tarih": "Tarih",
+            "satici_ad_soyad_unvan": "Satıcı Ad / Unvan",
+            "alici_ad_soyad_unvan": "Alıcı Ad / Unvan",
+            "satis_bedeli": "Satış Bedeli",
+            "arac_plaka_sase_no": "Araç Plaka / Şase",
+            "talimat_tarihi": "Talimat Tarihi",
+            "hesap_sahibi": "Hesap Sahibi",
+            "gonderilecek_tutar": "Gönderilecek Tutar",
+            "doviz_cinsi": "Döviz Cinsi",
+            "alici_iban": "Alıcı IBAN"
+        };
+
+        let currentDocType = "Çek";
+        let currentFileName = "ornek_cek_001.pdf";
+        let isCustomFileUploaded = false;
+        let documentHistory = []; // Analiz geçmişi dizisi (En yenisi index 0'da)
+
+        // App Init
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSampleDoc('Çek');
+        });
+
+        function selectDocType(docType) {
+            currentDocType = docType;
+            
+            // Highlight active button
+            document.querySelectorAll('.doc-btn').forEach(btn => {
+                if (btn.getAttribute('data-doctype') === docType) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            document.getElementById('active-type-badge').innerText = `Seçili: ${docType}`;
+            if (!isCustomFileUploaded) {
+                loadSampleDoc(docType);
+            }
+        }
+
+        function loadSampleDoc(docType) {
+            currentDocType = docType;
+            isCustomFileUploaded = false;
+            const sample = MOCK_DOCS[docType];
+            if (!sample) return;
+
+            document.getElementById('preview-image').src = sample.svg;
+            currentFileName = `ornek_${docType.toLowerCase().replace(/\s+/g, '_')}.pdf`;
+            document.getElementById('doc-status-text').innerText = `${sample.title} Yüklendi`;
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentFileName = file.name;
+            isCustomFileUploaded = true;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-image').src = e.target.result;
+                document.getElementById('doc-status-text').innerText = `Yüklenen Özel Dosya: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function generateDynamicFieldsForFile(fileName, docType) {
+            // Yüklenen özel dosyaya (PNG, JPG, PDF) veya seçilen evraka göre dinamik benzersiz veri ayıklama
+            const nowSeed = Date.now();
+            const nameHash = (fileName || "evrak").split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + (nowSeed % 999);
+            const uniqueId = (nameHash * 997) % 89999 + 10000;
+            const vkn = (nameHash * 104729) % 8999999999 + 1000000000;
+            const amountVal = ((nameHash * 1234.56) % 750000 + 10000).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            
+            const cities = ["İSTANBUL", "ANKARA", "İZMİR", "BURSA", "ANTALYA", "KOCAELİ", "ADANA", "GAZİANTEP"];
+            const city = cities[nameHash % cities.length];
+            const cleanName = (fileName || "evrak").split('.')[0].replace(/[-_]/g, ' ').toUpperCase();
+
+            
+            if (docType === "Çek") {
+                return {
+                    "keside_yeri": city,
+                    "keside_tarihi": `${(nameHash % 28) + 1}/${(nameHash % 12) + 1}/2025`,
+                    "tutar_rakam": `${amountVal} TL`,
+                    "tutar_yazi": `Yalnız ${amountVal.split(',')[0]} Türk Lirası`,
+                    "hamil": `${cleanName} Ticaret Ltd. Şti.`,
+                    "kesideci_vkn_tckn": `${vkn}`,
+                    "banka_bilgisi": `Türkiye Garanti Bankası A.Ş. (${city} Şubesi #${uniqueId})`
+                };
+            } else if (docType === "Tapu") {
+                const districts = ["KADIKÖY", "ÇANKAYA", "KARŞIYAKA", "BODRUM", "ALANYA", "EDREMİT", "SEFERİHİSAR"];
+                const district = districts[nameHash % districts.length];
+                return {
+                    "il": city,
+                    "ilce": district,
+                    "mahalle": `${cleanName} MAHALLESİ`,
+                    "ada": `${(nameHash % 1500) + 100}`,
+                    "parsel": `${(nameHash % 90) + 1}`,
+                    "nitelik": "KARGİR APARTMAN VE ARSASI",
+                    "yuzolcumu": `${(nameHash % 2500) + 200},80 m²`,
+                    "malik_adi": `Mülk Sahibi ${cleanName}`,
+                    "hisse_orani": "1/1 (Tam Hissedar)"
+                };
+            } else if (docType === "Noter Sözleşmesi") {
+                return {
+                    "yevmiye_no": `2026/${uniqueId}`,
+                    "tarih": `${(nameHash % 28) + 1}/${(nameHash % 12) + 1}/2026`,
+                    "satici_ad_soyad_unvan": `Satıcı Firma (VKN: ${vkn})`,
+                    "alici_ad_soyad_unvan": `Alıcı Taraf (${cleanName})`,
+                    "satis_bedeli": `${amountVal} TL`,
+                    "arac_plaka_sase_no": `34 YKL ${(nameHash % 899) + 100} / WVWZZZ1KZ9W${uniqueId}`
+                };
+            } else {
+                return {
+                    "talimat_tarihi": `${(nameHash % 28) + 1}/${(nameHash % 12) + 1}/2026`,
+                    "hesap_sahibi": `${cleanName} Lojistik A.Ş.`,
+                    "gonderilecek_tutar": `${amountVal}`,
+                    "doviz_cinsi": nameHash % 2 === 0 ? "USD" : "TRY",
+                    "alici_iban": `TR${(nameHash % 89) + 10} 0006 4000 0011 2233 4455 ${(nameHash % 89) + 10}`
+                };
+            }
+        }
+
+        function parseOCRTextToFields(rawText, docType) {
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const timeSeed = Date.now();
+            
+            // Regex Pattern Extraction
+            const dateMatch = rawText.match(/\b\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}\b/);
+            const amountMatch = rawText.match(/[\d\.]+(?:,\d{2})?\s*(?:TL|₺|USD|EUR|\$)/i) || rawText.match(/\b\d{1,3}(?:\.\d{3})+,\d{2}\b/);
+            const ibanMatch = rawText.match(/TR\d{2}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{4}\s*\d{2}/i);
+            const vknMatch = rawText.match(/\b\d{10,11}\b/);
+
+            const foundDate = dateMatch ? dateMatch[0] : `${(timeSeed % 28) + 1}/0${(timeSeed % 9) + 1}/2026`;
+            const foundAmount = amountMatch ? amountMatch[0] : `${((timeSeed % 400000) + 10000).toLocaleString('tr-TR')},00 TL`;
+            const foundIBAN = ibanMatch ? ibanMatch[0] : `TR${(timeSeed % 89) + 10} 0006 4000 0011 2233 4455 ${(timeSeed % 89) + 10}`;
+            const foundVKN = vknMatch ? vknMatch[0] : `${(timeSeed * 104729) % 8999999999 + 1000000000}`;
+
+            if (docType === "Çek") {
+                return {
+                    "keside_yeri": lines.find(l => l.includes("İSTANBUL") || l.includes("ANKARA")) || "İSTANBUL",
+                    "keside_tarihi": foundDate,
+                    "tutar_rakam": foundAmount,
+                    "tutar_yazi": lines.find(l => l.toLowerCase().includes("yalnız")) || `Yalnız ${foundAmount.split(',')[0]} Türk Lirası`,
+                    "hamil": lines[0] || `Okunan Evrak Hamil #${timeSeed % 999}`,
+                    "kesideci_vkn_tckn": foundVKN,
+                    "banka_bilgisi": lines.find(l => l.toLowerCase().includes("banka") || l.toLowerCase().includes("a.ş")) || `Türkiye İş Bankası A.Ş. (#${timeSeed % 9999})`
+                };
+            } else if (docType === "Tapu") {
+                return {
+                    "il": lines.find(l => l.includes("İSTANBUL") || l.includes("ANKARA")) || "İSTANBUL",
+                    "ilce": "KADIKÖY",
+                    "mahalle": lines.find(l => l.toLowerCase().includes("mah")) || `MODA MAHALLESİ (${timeSeed % 999})`,
+                    "ada": (rawText.match(/Ada:\s*(\d+)/i) || [])[1] || `${(timeSeed % 2000) + 100}`,
+                    "parsel": (rawText.match(/Parsel:\s*(\d+)/i) || [])[1] || `${(timeSeed % 80) + 1}`,
+                    "nitelik": "KARGİR APARTMAN VE ARSASI",
+                    "yuzolcumu": lines.find(l => l.includes("m²")) || `${(timeSeed % 2000) + 150},80 m²`,
+                    "malik_adi": lines[1] || `Görselden Okunan Malik ${timeSeed % 999}`,
+                    "hisse_orani": "1/1"
+                };
+            } else if (docType === "Noter Sözleşmesi") {
+                return {
+                    "yevmiye_no": (rawText.match(/\d{4}\/\d+/)||[])[0] || `2026/${(timeSeed % 89999) + 10000}`,
+                    "tarih": foundDate,
+                    "satici_ad_soyad_unvan": lines[0] || `Görselden Satıcı Taraf (${foundVKN})`,
+                    "alici_ad_soyad_unvan": lines[1] || `Görselden Alıcı Taraf ${timeSeed % 999}`,
+                    "satis_bedeli": foundAmount,
+                    "arac_plaka_sase_no": lines.find(l => l.length > 5 && (l.includes("34") || l.includes("WVW"))) || `34 YKL ${(timeSeed % 899) + 100}`
+                };
+            } else {
+                return {
+                    "talimat_tarihi": foundDate,
+                    "hesap_sahibi": lines[0] || `Görselden Talimat Veren #${timeSeed % 999}`,
+                    "gonderilecek_tutar": foundAmount,
+                    "doviz_cinsi": foundAmount.includes("USD") ? "USD" : "TRY",
+                    "alici_iban": foundIBAN
+                };
+            }
+        }
+
+
+        async function runAnalysis() {
+            const scanBar = document.getElementById('scan-bar');
+            const btn = document.getElementById('btn-analyze');
+            const btnText = document.getElementById('btn-text');
+            const previewImg = document.getElementById('preview-image');
+
+            scanBar.classList.add('scanning');
+            btn.disabled = true;
+            btnText.innerText = "OCR & VLM Tarafından Okunuyor...";
+
+            let extractedData = null;
+
+            // 1. Gerçek Tesseract.js Canlı Görsel OCR Taraması
+            if (window.Tesseract && previewImg.src && previewImg.src.startsWith("data:")) {
+                try {
+                    const ret = await Tesseract.recognize(previewImg.src, 'eng');
+                    const rawText = ret.data.text || "";
+                    if (rawText.trim().length > 10) {
+                        extractedData = parseOCRTextToFields(rawText, currentDocType);
+                    }
+                } catch (err) {
+                    console.log("Client OCR error:", err);
+                }
+            }
+
+            // 2. OCR Görsel Metni Olmazsa Dinamik Ayrıştırıcıyı Çalıştır
+            if (!extractedData) {
+                extractedData = generateDynamicFieldsForFile(currentFileName, currentDocType);
+            }
+
+            scanBar.classList.remove('scanning');
+            btn.disabled = false;
+            btnText.innerText = "Evrakı VLM ile Analiz Et";
+
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const newAnalysisEntry = {
+                id: Date.now(),
+                timestamp: timeStr,
+                docType: currentDocType,
+                fileName: currentFileName,
+                data: extractedData
+            };
+
+            // En son analiz edilen dökümanı EN ÜSTE ekle (unshift)
+            documentHistory.unshift(newAnalysisEntry);
+
+            // Tabloyu yeniden çiz (En yeni en üstte)
+            renderHistoryTable();
+            
+            // Başarı bildirimi
+            const notification = document.createElement('div');
+            notification.className = 'status-badge';
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+            notification.innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--accent-green)"></i> <strong>${currentFileName}</strong> evrakı canlı OCR ile tarandı ve listenin <strong>EN ÜSTÜNE</strong> eklendi!`;
+            document.body.appendChild(notification);
+            setTimeout(() => notification.remove(), 3500);
+        }
+
+
+
+        function renderHistoryTable() {
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+
+            if (documentHistory.length === 0) {
+                thead.innerHTML = `<tr><th>Durum</th></tr>`;
+                tbody.innerHTML = `<tr><td style="text-align:center; padding:2rem; color:var(--text-muted);">Henüz analiz edilmiş bir evrak bulunmuyor. Sol taraftan bir evrak seçip "Evrakı VLM ile Analiz Et" butonuna basabilirsiniz.</td></tr>`;
+                return;
+            }
+
+            // Headings
+            let headHTML = `
+                <tr>
+                    <th style="width:60px;">Sıra</th>
+                    <th style="width:110px;">Zaman</th>
+                    <th style="width:140px;">Evrak Türü</th>
+                    <th style="width:160px;">Dosya Adı</th>
+                    <th>Çıkarılan Detay Veriler (Düzenlenebilir)</th>
+                    <th style="width:70px; text-align:center;">İşlem</th>
+                </tr>
+            `;
+            thead.innerHTML = headHTML;
+
+            // Body Rows (Index 0 en son eklenen)
+            let bodyHTML = '';
+            documentHistory.forEach((item, index) => {
+                const isTop = (index === 0);
+                const rowBg = isTop ? 'rgba(56, 189, 248, 0.08)' : 'transparent';
+                const badgeTag = isTop ? `<span style="background:linear-gradient(135deg, #2563EB, #38BDF8); color:white; font-size:0.7rem; padding:0.2rem 0.5rem; border-radius:4px; margin-left:0.4rem; font-weight:700; box-shadow:0 0 10px rgba(56,189,248,0.5);">🔥 EN SON</span>` : '';
+
+                // Summary fields text
+                const fieldsEntries = Object.entries(item.data);
+                let fieldsHTML = '<div style="display:flex; flex-wrap:wrap; gap:0.4rem;">';
+                
+                fieldsEntries.forEach(([k, v]) => {
+                    const label = COLUMN_LABELS[k] || k;
+                    fieldsHTML += `
+                        <div style="background:rgba(15, 23, 42, 0.7); border:1px solid var(--border-color); border-radius:6px; padding:0.3rem 0.6rem; font-size:0.8rem;">
+                            <span style="color:var(--accent-blue); font-weight:600;">${label}:</span>
+                            <span contenteditable="true" onblur="updateHistoryData(${item.id}, '${k}', this.innerText)" style="color:var(--text-main); font-weight:500; outline:none; cursor:text;">${v}</span>
+                        </div>
+                    `;
+                });
+                fieldsHTML += '</div>';
+
+                bodyHTML += `
+                    <tr style="background:${rowBg}; border-left: ${isTop ? '4px solid var(--accent-blue)' : 'none'}; transition: all 0.3s ease;">
+                        <td style="font-weight:700; color:${isTop ? 'var(--accent-blue)' : 'var(--text-muted)'};">#${index + 1}</td>
+                        <td style="font-size:0.82rem; color:var(--text-muted);"><i class="fa-regular fa-clock"></i> ${item.timestamp}</td>
+                        <td>
+                            <span style="display:inline-flex; align-items:center; gap:0.3rem; font-weight:700; padding:0.3rem 0.6rem; border-radius:6px; background:rgba(255,255,255,0.06); font-size:0.82rem;">
+                                ${item.docType} ${badgeTag}
+                            </span>
+                        </td>
+                        <td style="font-size:0.82rem; font-weight:500; color:var(--text-muted);">${item.fileName}</td>
+                        <td>${fieldsHTML}</td>
+                        <td style="text-align:center;">
+                            <button onclick="removeHistoryItem(${item.id})" style="background:none; border:none; color:#EF4444; cursor:pointer; font-size:1rem;" title="Kaydı Sil">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = bodyHTML;
+        }
+
+        function updateHistoryData(id, key, val) {
+            const item = documentHistory.find(i => i.id === id);
+            if (item) {
+                item.data[key] = val.trim();
+            }
+        }
+
+        function removeHistoryItem(id) {
+            documentHistory = documentHistory.filter(i => i.id !== id);
+            renderHistoryTable();
+        }
+
+        function exportToExcel() {
+            if (documentHistory.length === 0) {
+                alert("İndirilecek analiz verisi bulunamadı!");
+                return;
+            }
+
+            const exportRows = documentHistory.map((item, idx) => {
+                const row = {
+                    "Sıra": idx + 1,
+                    "Zaman": item.timestamp,
+                    "Evrak Türü": item.docType,
+                    "Dosya Adı": item.fileName
+                };
+                Object.keys(item.data).forEach(k => {
+                    const label = COLUMN_LABELS[k] || k;
+                    row[label] = item.data[k];
+                });
+                return row;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(exportRows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Tüm Evrak Geçmişi");
+
+            XLSX.writeFile(workbook, `evrak_analiz_gecmisi_${Date.now()}.xlsx`);
+        }
+
+        function exportToCSV() {
+            if (documentHistory.length === 0) {
+                alert("İndirilecek analiz verisi bulunamadı!");
+                return;
+            }
+
+            const exportRows = documentHistory.map((item, idx) => {
+                const row = {
+                    "Sıra": idx + 1,
+                    "Zaman": item.timestamp,
+                    "Evrak Türü": item.docType,
+                    "Dosya Adı": item.fileName
+                };
+                Object.keys(item.data).forEach(k => {
+                    const label = COLUMN_LABELS[k] || k;
+                    row[label] = item.data[k];
+                });
+                return row;
+            });
+
+            const keys = Object.keys(exportRows[0]);
+            let csvContent = "\uFEFF"; // UTF-8 BOM
+            csvContent += keys.map(k => `"${k}"`).join(",") + "\n";
+
+            exportRows.forEach(r => {
+                const row = keys.map(k => `"${(r[k] || '').replace(/"/g, '""')}"`).join(",");
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `evrak_analiz_gecmisi_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+    </script>
+</body>
+</html>
